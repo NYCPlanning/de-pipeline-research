@@ -6,6 +6,10 @@ from pathlib import Path
 import tempfile
 from urllib.parse import urlparse
 
+from osgeo.gdalconst import GA_ReadOnly
+
+from datetime import datetime
+
 from osgeo import ogr
 
 class PostgisDumper():
@@ -37,26 +41,38 @@ class PostgisDumper():
     
     @staticmethod
     def format_path(path):
-        path = '/vsicurl/' + path
         filename, extension = os.path.splitext(os.path.basename(path))
         
         if extension == '.shp':
             # TODO: Assuming its a shapefile we want on the inside
-            # path = "/vsizip/{}/{}/*.shp".format(path, filename)
-            path = "/vsizip/" + path
+            path = "/vsizip/vsicurl/" + path
         return path
         
     
     def dump(self, db_table_name, path):
         path = PostgisDumper.format_path(path)
+        print(path)
         
         dstDS = gdal.OpenEx(self.engine, gdal.OF_VECTOR)
         if (dstDS is None):
             raise Exception('Could not connect to postgres db.')
+        
+        # srcDS = gdal.OpenEx(path, gdal.OF_VECTOR, open_options=['CPL_VSIL_CURL_ALLOWED_EXTENSIONS=.csv','AUTODETECT_TYPE=NO', 'EMPTY_STRING_AS_NULL=YES', 'GEOM_POSSIBLE_NAMES=the_geom'])
+        
+        allowed_drivers = [gdal.GetDriver(i).GetDescription() for i in range(gdal.GetDriverCount())]
+        allowed_drivers.remove('GeoJSONSeq')
             
-        srcDS = gdal.OpenEx(path, open_options=['AUTODETECT_TYPE=NO', 'EMPTY_STRING_AS_NULL=YES', 'GEOM_POSSIBLE_NAMES=the_geom'])
+        srcDS = gdal.OpenEx(path, gdal.OF_VECTOR, allowed_drivers=allowed_drivers)
+    
         if (srcDS is None):
-            raise Exception('Could not open {}'.format(path))
+            raise Exception('Could not open {}'.format(path)) 
+            
+        print("GDAL used the {} driver.".format(srcDS.GetDriver().ShortName))
+            
+        dstDS.ExecuteSQL('create schema if not exists {};'.format(db_table_name))
+        
+        layerName = "{}.{}".format(db_table_name, datetime.now().strftime("_%m_%d_%Y"))
+        print(layerName)
 
         gdal.VectorTranslate(
             dstDS,
@@ -66,5 +82,5 @@ class PostgisDumper():
             dstSRS=self.dstSRS,
             srcSRS=self.srcSRS,
             geometryType='MULTIPOLYGON',
-            layerName=db_table_name,
+            layerName=layerName,
             accessMode='overwrite')
