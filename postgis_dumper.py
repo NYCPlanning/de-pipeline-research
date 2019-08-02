@@ -41,33 +41,53 @@ class PostgisDumper():
     
     @staticmethod
     def format_path(path):
+        """ Adds vsizip to [path] if [path] is a ShapeFile."""
         filename, extension = os.path.splitext(os.path.basename(path))
         
-        if extension == '.shp':
+        if extension == '.shp' or extension == '.zip':
             # TODO: Assuming its a shapefile we want on the inside
             path = "/vsizip/vsicurl/" + path
         return path
         
+    def get_allowed_drivers(path):
+        """ Returns allowed drivers for OpenEx given the file type of [path]"""
+        allowed_drivers = [gdal.GetDriver(i).GetDescription() for i in range(gdal.GetDriverCount())]
+        
+        filename, extension = os.path.splitext(os.path.basename(path))
+        
+        # GDAL thinks .csv files should be parsed using the GeoJSONSeq Driver and throws parsing errors when it tries the other JSON Drivers
+        if extension == '.csv':
+            allowed_drivers = [driver for driver in allowed_drivers if "JSON" not in driver]
+        # allowed_drivers.remove('GeoJSONSeq')
+        return allowed_drivers
+        
     
-    def dump(self, db_table_name, path):
+    @staticmethod
+    def load_srcDS(path):
         path = PostgisDumper.format_path(path)
         print(path)
+        
+        allowed_drivers = PostgisDumper.get_allowed_drivers(path)
+
+        # srcDS = gdal.OpenEx(path, gdal.OF_VECTOR, open_options=['CPL_VSIL_CURL_ALLOWED_EXTENSIONS=.csv','AUTODETECT_TYPE=NO', 'EMPTY_STRING_AS_NULL=YES', 'GEOM_POSSIBLE_NAMES=the_geom'])
+        srcDS = gdal.OpenEx(path, gdal.OF_VECTOR, allowed_drivers=allowed_drivers)
+        
+        # OpenEx returns None if the file can't be opened
+        if (srcDS is None):
+            raise Exception('Could not open {}'.format(path)) 
+        
+        return srcDS
+        
+    
+    def dump(self, db_table_name, path):
         
         dstDS = gdal.OpenEx(self.engine, gdal.OF_VECTOR)
         if (dstDS is None):
             raise Exception('Could not connect to postgres db.')
         
-        # srcDS = gdal.OpenEx(path, gdal.OF_VECTOR, open_options=['CPL_VSIL_CURL_ALLOWED_EXTENSIONS=.csv','AUTODETECT_TYPE=NO', 'EMPTY_STRING_AS_NULL=YES', 'GEOM_POSSIBLE_NAMES=the_geom'])
-        
-        allowed_drivers = [gdal.GetDriver(i).GetDescription() for i in range(gdal.GetDriverCount())]
-        allowed_drivers.remove('GeoJSONSeq')
+        srcDS = PostgisDumper.load_srcDS(path)
             
-        srcDS = gdal.OpenEx(path, gdal.OF_VECTOR, allowed_drivers=allowed_drivers)
-    
-        if (srcDS is None):
-            raise Exception('Could not open {}'.format(path)) 
-            
-        print("GDAL used the {} driver.".format(srcDS.GetDriver().ShortName))
+        print("GDAL used the {} driver.\n".format(srcDS.GetDriver().ShortName))
             
         dstDS.ExecuteSQL('create schema if not exists {};'.format(db_table_name))
         
