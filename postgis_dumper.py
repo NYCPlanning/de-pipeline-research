@@ -54,7 +54,6 @@ class PostgisDumper():
         allowed_drivers = [gdal.GetDriver(i).GetDescription() for i in range(gdal.GetDriverCount())]
         
         filename, extension = os.path.splitext(os.path.basename(path))
-        
         # GDAL thinks .csv files should be parsed using the GeoJSONSeq Driver and throws parsing errors when it tries the other JSON Drivers
         if extension == '.csv':
             allowed_drivers = [driver for driver in allowed_drivers if "JSON" not in driver]
@@ -87,12 +86,12 @@ class PostgisDumper():
         
         srcDS = PostgisDumper.load_srcDS(path)
             
-        print("GDAL used the {} driver.\n".format(srcDS.GetDriver().ShortName))
+        print("GDAL used the {} driver.".format(srcDS.GetDriver().ShortName))
             
         dstDS.ExecuteSQL('create schema if not exists {};'.format(db_table_name))
         
         layerName = "{}.{}".format(db_table_name, datetime.now().strftime("_%m_%d_%Y"))
-        print(layerName)
+        print('Dumping {} to postgres...'.format(layerName))
 
         gdal.VectorTranslate(
             dstDS,
@@ -104,3 +103,6 @@ class PostgisDumper():
             geometryType='MULTIPOLYGON',
             layerName=layerName,
             accessMode='overwrite')
+        print("Finished Dumping.\n")
+            
+        
