@@ -25,7 +25,7 @@ jobs:
       - run:
           name: test db
           command: |
-            psql postgresql://postgres@src:5432/postgres -c 'CREATE TABLE test_src;'
-            psql postgresql://postgres@dst:5432/postgres -c 'CREATE TABLE test_dst;'
+            psql postgresql://postgres@src:5432/postgres -c 'CREATE TABLE test_src'
+            psql postgresql://postgres@dst:5432/postgres -c 'CREATE TABLE test_dst'
     
       
