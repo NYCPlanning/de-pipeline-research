@@ -12,7 +12,7 @@ from datetime import datetime
 
 from osgeo import ogr
 
-class PostgisDumper():
+class ArchiveDumper():
     def __init__(self,
                  srcSRS='EPSG:4326', 
                  dstSRS='EPSG:4326',
@@ -63,10 +63,10 @@ class PostgisDumper():
     
     @staticmethod
     def load_srcDS(path):
-        path = PostgisDumper.format_path(path)
+        path = ArchiveDumper.format_path(path)
         print(path)
         
-        allowed_drivers = PostgisDumper.get_allowed_drivers(path)
+        allowed_drivers = ArchiveDumper.get_allowed_drivers(path)
 
         # srcDS = gdal.OpenEx(path, gdal.OF_VECTOR, open_options=['CPL_VSIL_CURL_ALLOWED_EXTENSIONS=.csv','AUTODETECT_TYPE=NO', 'EMPTY_STRING_AS_NULL=YES', 'GEOM_POSSIBLE_NAMES=the_geom'])
         srcDS = gdal.OpenEx(path, gdal.OF_VECTOR, allowed_drivers=allowed_drivers)
@@ -78,13 +78,13 @@ class PostgisDumper():
         return srcDS
         
     
-    def dump(self, db_table_name, path):
+    def dump_to_archive(self, db_table_name, path):
         
         dstDS = gdal.OpenEx(self.engine, gdal.OF_VECTOR)
         if (dstDS is None):
             raise Exception('Could not connect to postgres db.')
         
-        srcDS = PostgisDumper.load_srcDS(path)
+        srcDS = ArchiveDumper.load_srcDS(path)
             
         print("GDAL used the {} driver.".format(srcDS.GetDriver().ShortName))
             

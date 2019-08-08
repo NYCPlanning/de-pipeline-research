@@ -1,11 +1,11 @@
-from postgis_dumper import PostgisDumper
-
+from archive_dumper import ArchiveDumper
+import os
 
 def main():
 
-    engine = 'postgresql://Ben:g650u8hn2d32agd7@edm-data-do-user-1939427-0.db.ondigitalocean.com:25060/recipe'
+    engine = os.environ['SRC_DB']
 
-    pd = PostgisDumper(engine=engine)
+    ad = ArchiveDumper(engine=engine)
 
     datasets = [{'schema_name': 'parks_properties',
                  'path': 'https://data.cityofnewyork.us/api/geospatial/k2ya-ucmv?method=export&format=GeoJSON'}]
@@ -13,7 +13,7 @@ def main():
     for dataset in datasets:
         print("Loading {} from {}".format(
             dataset['schema_name'], dataset['path']))
-        pd.dump(dataset['schema_name'], dataset['path'])
+        ad.dump_to_archive(dataset['schema_name'], dataset['path'])
 
 
 if __name__ == '__main__':

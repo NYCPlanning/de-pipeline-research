@@ -5,8 +5,11 @@ from datetime import datetime
 from operator import itemgetter
 
 
-class PostgisLoader():
+class PostgresDumper():
     def __init__(self, src_engine_url, dst_engine_url):
+        self.src_engine_url = src_engine_url
+        self.dst_engine_url = dst_engine_url
+        
         self.src_engine = db.create_engine(src_engine_url)
         self.dst_engine = db.create_engine(dst_engine_url)
 
@@ -21,6 +24,7 @@ class PostgisLoader():
 
     def dump_to_dst(self, schema_name, date='latest'):
         """Fetches the latest table given a schema_name and dumps it into an [engine] """
+        
         query = 'create schema if not exists {};'.format(schema_name)
         dst_connection = self.dst_engine.connect()
         dst_connection.execute(query)
@@ -30,9 +34,9 @@ class PostgisLoader():
 
         query = f'DROP TABLE IF EXISTS {table_name}'
         dst_connection.execute(query)
-
+        
         os.system(
-            'docker exec db pg_dump -t parks_properties._08_07_2019 --no-owner -d $DB_SRC | psql $DB_DEST')
+            f'pg_dump -t {schema_name}.{table_name} --no-owner -d {self.src_engine_url} | psql {self.dst_engine_url}')
 
         query = f'DROP TABLE IF EXISTS {schema_name}'
         dst_connection.execute(query)
