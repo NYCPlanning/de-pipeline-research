@@ -1,0 +1,31 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: osgeo/gdal:ubuntu-small-latest
+        environment:
+          SRC_ENGINE: postgresql://postgres@src:5432/postgres
+          DST_ENGINE: postgresql://postgres@dst:5432/postgres
+      - image: mdillon/postgis
+        name: src
+      - image: mdillon/postgis
+        name: dst
+
+    working_directory: ~/de-pipeline-research/
+
+    steps:
+      - checkout:
+
+      - run:
+          name: install dependencies
+          command: |
+            apt update
+            apt install -y postgres-client-common postgres-client-10
+
+      - run:
+          name: test db
+          command: |
+            psql postgresql://postgres@src:5432/postgres -c 'CREATE TABLE test_src;'
+            psql postgresql://postgres@dst:5432/postgres -c 'CREATE TABLE test_dst;'
+    
+      
