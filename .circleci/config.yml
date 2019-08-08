@@ -20,7 +20,7 @@ jobs:
           name: install dependencies
           command: |
             apt update
-            apt install -y postgres-client-common postgres-client-10
+            apt install -y postgresql-client-common postgresql-client-10
 
       - run:
           name: test db
