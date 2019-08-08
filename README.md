@@ -15,7 +15,7 @@ Pull the GDAL docker image.
 
 Create the docker container. Remember to set the environment variables!
 
-``docker run -itd --network=host -v `pwd`:/home/de_pipelines/ -w /home/de_pipelines/ -e SRC_DB={archive_connection_string} -e DST_DB={archive_connection_string} --name=de_pipelines osgeo/gdal:ubuntu-small-latest bash``
+```docker run -itd --network=host -v `pwd`:/home/de_pipelines/ -w /home/de_pipelines/ -e SRC_DB={archive_connection_string} -e DST_DB={archive_connection_string} --name=de_pipelines osgeo/gdal:ubuntu-small-latest bash```
 
 `docker start de_pipelines`
 
